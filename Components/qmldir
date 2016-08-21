@@ -1,0 +1,6 @@
+module Components
+
+FieldInputPopup 1.0 FieldInputPopup.qml
+ButtonMenu 1.0 ButtonMenu.qml
+ListViewBackground 1.0 ListViewBackground.qml
+

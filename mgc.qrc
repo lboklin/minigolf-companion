@@ -1,0 +1,45 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qtquickcontrols2.conf</file>
+        <file>images/icon.png</file>
+        <file>Components/qmldir</file>
+        <file>Components/FieldInputPopup.qml</file>
+        <file>pages/Round.qml</file>
+        <file>pages/Overview.qml</file>
+        <file>mgc.cpp</file>
+        <file>mgc.pro</file>
+        <file>mgc.pro.user</file>
+        <file>mgc.qml</file>
+        <file>mgc.qrc</file>
+        <file>pages/Players.qml</file>
+        <file>pages/Start.qml</file>
+        <file>images/icons/add_circle_outline.svg</file>
+        <file>images/icons/arrow_back.svg</file>
+        <file>images/icons/arrow_forward.svg</file>
+        <file>images/icons/chevron_left.svg</file>
+        <file>images/icons/chevron_right.svg</file>
+        <file>images/icons/menu.svg</file>
+        <file>images/icons/mode_edit.svg</file>
+        <file>images/icons/more_vert.svg</file>
+        <file>pages/Course.qml</file>
+        <file>Components/ButtonMenu.qml</file>
+        <file>Components/ListViewBackground.qml</file>
+        <file>android/AndroidManifest.xml</file>
+        <file>android/build.gradle</file>
+        <file>android/gradle.properties</file>
+        <file>android/gradle.properties~</file>
+        <file>android/gradlew</file>
+        <file>android/gradlew.bat</file>
+        <file>android/local.properties</file>
+        <file>android/local.properties~</file>
+        <file>android/gradle/wrapper/gradle-wrapper.jar</file>
+        <file>android/gradle/wrapper/gradle-wrapper.properties</file>
+        <file>android/res/drawable-ldpi/icon.png</file>
+        <file>android/res/values/libs.xml</file>
+        <file>LICENSE</file>
+        <file>mgc_sv_se.qm</file>
+        <file>mgc_sv_se.ts</file>
+        <file>README.md</file>
+        <file>images/courses/course1.png</file>
+    </qresource>
+</RCC>
