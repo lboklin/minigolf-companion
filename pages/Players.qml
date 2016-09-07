@@ -5,191 +5,219 @@ import QtQuick.Layouts 1.3
 import QtQuick.Controls.Material 2.0
 import QtQuick.Controls.Material.impl 2.0
 import QtGraphicalEffects 1.0
+import QtQuick.LocalStorage 2.0
 import "qrc:/Components"
 
 Page {
-	id: page
+    id: page
 
-	//: The title of the page.
-	title: qsTr("Players")
+    //: The title of the page.
+    title: qsTr("Players")
 
+    background: Rectangle { color: Qt.darker(Material.background, 1.02) }
 
-	background: Rectangle { color: Qt.darker(Material.background, 1.02) }
+    /* This list starts with one element which asks the user to input their details
+    ** it will be populated as players are added. */
+    ListView {
+        id: playerList
 
-	function playerColor(playerIndex) {
-		var playerColors = [Material.color(Material.Red),
-							Material.color(Material.Blue),
-							Material.color(Material.Green),
-							Material.color(Material.Yellow),
-							Material.color(Material.Purple),
-							Material.color(Material.Amber)]
+        property string dateString: new Date().toLocaleDateString(Qt.locale(), "yy-MM-dd")
 
-		return playerColors[playerIndex]
-	}
+        //This prevents the children items popping in and out as they disappear.
+        displayMarginBeginning: 50; displayMarginEnd: displayMarginBeginning
 
-	ListView {
-		id: playerList
+        spacing: 10
+        anchors { margins: 20; fill: parent }
 
-		//This prevents the children items popping in and out as they disappear.
-		displayMarginBeginning: 50; displayMarginEnd: displayMarginBeginning
+        // This function is for cycling through an array of colors to assign automatically to players
+        function playerColor(playerIndex) {
+            var playerColors = [Material.color(Material.Red),
+                                Material.color(Material.Blue),
+                                Material.color(Material.Green),
+                                Material.color(Material.Yellow),
+                                Material.color(Material.Purple),
+                                Material.color(Material.Amber)];
 
-		spacing: 10
-		anchors { margins: 20; fill: parent }
+            return playerColors[playerIndex];
+        }
 
-		delegate: ItemDelegate {
-			id: playerCard
+        function addPlayerToDB(name, color, score) {
+            var db = LocalStorage.openDatabaseSync("Players", "1.0", "Holds players and their details");
 
-			padding: 8
-			height: Math.max(Math.min(Screen.height / 14, Window.height / 5), 50)
-			anchors { left: parent.left; right: parent.right }
+            db.transaction (
+                function(tx) {
+                    // Create db if it doesn't already exist
+                    tx.executeSql('CREATE TABLE IF NOT EXISTS Players(
+                                ID		INT		PRIMARY KEY AUTOINCREMENT,
+                                NAME 	TEXT,
+                                COLOR	TEXT,
+                                SCORE	INT,
+                                DATE	TEXT)'
+                                );
 
-			//When card gains focus, just give focus to the name input field.
-			onActiveFocusChanged: nameField.forceActiveFocus()
+                    // Insert the players info as a new row
+                    // TODO: Figure out where to store and how to treat scores -
+                    // + should it be here or in a separate database?
+                    tx.executeSql('INSERT INTO Players VALUES(?, ?)', [ name, color, score, playerList.dateString ]);
+                }
+            );
+        }
 
-			background: Rectangle {
-				radius: 3
-				color: Material.background
+        // A card-looking element which holds the player details
+        delegate: ItemDelegate {
+            id: playerCard
 
-				layer {
-					enabled: true
-					effect: ElevationEffect { elevation: 1 }
-				}
-			}
+            padding: 8
+            height: Math.max(Math.min(Screen.height / 14, Window.height / 5), 50)
+            anchors { left: parent.left; right: parent.right }
 
-			contentItem: RowLayout {
+            //When card gains focus, just give focus to the name input field.
+            onActiveFocusChanged: nameField.forceActiveFocus()
 
-				spacing: 20
-				anchors { fill: parent; margins: 0 }
+            background: Rectangle {
+                radius: 3
+                color: Material.background
 
-				TextField {
-					id: nameField
+                layer {
+                    enabled: true
+                    effect: ElevationEffect { elevation: 1 }
+                }
+            }
 
-					Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-					Layout.leftMargin: 16
+            contentItem: RowLayout {
 
-					color: Material.foreground
-					//: This is the placeholderText for player name input field.
-					placeholderText: qsTr("Player Name")
-					validator: RegExpValidator { regExp: (/[A-Öa-ö ]+/) }
+                spacing: 20
+                anchors { fill: parent; margins: 0 }
 
-					onAccepted: {
-						if (playerList.nextItemInFocusChain(true).acceptableInput)
-							players.append({}); playerList.currentIndex = index + 1
-					}
-				}
+                TextField {
+                    id: nameField
 
-				ComboBox {
-					id: colorChooser
+                    Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+                    Layout.leftMargin: 16
 
-					property color currentColor: Material.color(Material.Red)
+                    color: Material.foreground
+                    //: This is the placeholderText for player name input field.
+                    placeholderText: qsTr("Player Name")
+                    validator: RegExpValidator { regExp: (/[A-Öa-ö ]+/) }
 
-					Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-					Layout.rightMargin: 16
-					Layout.preferredHeight: nameField.height
-					Layout.preferredWidth: nameField.height
+                    onAccepted: {
+                        if (playerList.nextItemInFocusChain(true).acceptableInput)
+                            players.append({}); playerList.currentIndex = index + 1
+                    }
+                }
 
-					activeFocusOnTab: false
-					displayText: ""
-					padding: 2
+                ComboBox {
+                    id: colorChooser
 
-					model:  [ Material.Red, Material.Blue, Material.Green, Material.Amber, Material.Purple ]
+                    property color currentColor: Material.color(Material.Red)
 
-					popup: Popup {
-						height: contentHeight
-						width: colorChooser.width
+                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                    Layout.rightMargin: 16
+                    Layout.preferredHeight: nameField.height
+                    Layout.preferredWidth: nameField.height
 
-						contentItem: ColumnLayout {
-							anchors.fill: parent
+                    activeFocusOnTab: false
+                    displayText: ""
+                    padding: 2
 
-							Repeater {
-								height: colorChooser.height
-								anchors { left: parent.left; right: parent.right }
+                    model:  [ Material.Red, Material.Blue, Material.Green, Material.Amber, Material.Purple ]
 
-								delegate: Rectangle { radius: 3; color: Material.color(modelData) }
+                    popup: Popup {
+                        height: contentHeight
+                        width: colorChooser.width
 
-								model: colorChooser.model
-							}
-						}
+                        contentItem: ColumnLayout {
+                            anchors.fill: parent
 
-						//						background: Rectangle { color: "transparent" }
-					}
+                            Repeater {
+                                height: colorChooser.height
+                                anchors { left: parent.left; right: parent.right }
 
-					contentItem: Rectangle {
-						radius: 3
-						color: playerColor(index)
-						layer {
-							enabled: true
-							effect: ElevationEffect { elevation: 1 }
-						}
-					}
+                                delegate: Rectangle { radius: 3; color: Material.color(modelData) }
 
-					background: Rectangle { color: "transparent" }
+                                model: colorChooser.model
+                            }
+                        }
 
-					onActivated: {
-						currentColor = model[index]
-					}
-				}
-			}
-		}
+                        //						background: Rectangle { color: "transparent" }
+                    }
 
-		model: ListModel {
-			id: players
+                    contentItem: Rectangle {
+                        radius: 3
+                        color: playerColor(index)
+                        layer {
+                            enabled: true
+                            effect: ElevationEffect { elevation: 1 }
+                        }
+                    }
 
-			ListElement { player: 1; name: ""; color: "red" }
-		}
+                    background: Rectangle { color: "transparent" }
 
-		footer: ColumnLayout {
-			id: buttons
+                    onActivated: {
+                        currentColor = model[index]
+                    }
+                }
+            }
+        }
 
-			anchors {
-				left: parent.left
-				right: parent.right
-			}
+        model: ListModel {
+            id: players
 
-			Button {
-				id: doneButton
+            ListElement { player: 1; name: ""; color: "red" }
+        }
 
-				enabled: false
-				flat: true
-				//: This is the label on the button to finish adding players and go to next page.
-				text: qsTr("Done")
-				anchors {
-					horizontalCenter: parent.horizontalCenter
-				}
+        footer: ColumnLayout {
+            id: buttons
 
-				onPressed: { stackView.push("qrc:/pages/Overview.qml") }
+            anchors {
+                left: parent.left
+                right: parent.right
+            }
 
-				Connections {
-					target: playerList.model
+            Button {
+                id: doneButton
 
-					onCountChanged: {
-						doneButton.enabled = true
-					}
-				}
-			}
-		}
+                enabled: false
+                flat: true
+                //: This is the label on the button to finish adding players and go to next page.
+                text: qsTr("Done")
+                anchors {
+                    horizontalCenter: parent.horizontalCenter
+                }
 
-		ListViewBackground { }
+                onPressed: { stackView.push("qrc:/pages/Overview.qml") }
 
-		ScrollIndicator.vertical: ScrollIndicator {
-			anchors {
-				right: parent.right
-				margins: -12
-			}
-		}
-	}
+                Connections {
+                    target: playerList.model
 
-	/*
-	Loader {
-		id: buttonLoader
+                    onCountChanged: {
+                        doneButton.enabled = true
+                    }
+                }
+            }
+        }
 
-		Connections {
-			target: playerList
+        ListViewBackground { }
 
-			onPlayerAdded: {
-				buttonLoader.source = "qrc:/Components/Menu.qml"
-			}
-		}
-	}
-	*/
+        ScrollIndicator.vertical: ScrollIndicator {
+            anchors {
+                right: parent.right
+                margins: -12
+            }
+        }
+    }
+
+    /*
+    Loader {
+        id: buttonLoader
+
+        Connections {
+            target: playerList
+
+            onPlayerAdded: {
+                buttonLoader.source = "qrc:/Components/Menu.qml"
+            }
+        }
+    }
+    */
 }
