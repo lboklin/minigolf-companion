@@ -17,11 +17,13 @@ Page {
     background: Rectangle { color: Qt.darker(Material.background, 1.02) }
 
     /* This list starts with one element which asks the user to input their details
-    ** it will be populated as players are added. */
+    ** and it will be populated as players are added. */
     ListView {
         id: playerList
 
         property string dateString: new Date().toLocaleDateString(Qt.locale(), "yy-MM-dd")
+
+        signal hasPlayersChanged(bool hasPlayer)
 
         //This prevents the children items popping in and out as they disappear.
         displayMarginBeginning: 50; displayMarginEnd: displayMarginBeginning
@@ -30,42 +32,69 @@ Page {
         anchors { margins: 20; fill: parent }
 
         // This function is for cycling through an array of colors to assign automatically to players
-        function playerColor(playerIndex) {
-            var playerColors = [Material.color(Material.Red),
-                                Material.color(Material.Blue),
-                                Material.color(Material.Green),
-                                Material.color(Material.Yellow),
-                                Material.color(Material.Purple),
-                                Material.color(Material.Amber)];
+        function assignColor(index) {
+            var colors = [Material.color(Material.Red),
+                          Material.color(Material.Blue),
+                          Material.color(Material.Green),
+                          Material.color(Material.Yellow),
+                          Material.color(Material.Purple),
+                          Material.color(Material.Amber)];
+            index = index % colors.length
 
-            return playerColors[playerIndex];
+            return colors[index];
         }
 
-        function addPlayerToDB(name, color, score) {
-            var db = LocalStorage.openDatabaseSync("Players", "1.0", "Holds players and their details");
+        function removePlayersTable(name, color) {
+            var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
 
             db.transaction (
                 function(tx) {
-                    // Create db if it doesn't already exist
-                    tx.executeSql('CREATE TABLE IF NOT EXISTS Players(
-                                ID		INT		PRIMARY KEY AUTOINCREMENT,
-                                NAME 	TEXT,
-                                COLOR	TEXT,
-                                SCORE	INT,
-                                DATE	TEXT)'
-                                );
-
-                    // Insert the players info as a new row
-                    // TODO: Figure out where to store and how to treat scores -
-                    // + should it be here or in a separate database?
-                    tx.executeSql('INSERT INTO Players VALUES(?, ?)', [ name, color, score, playerList.dateString ]);
+                    tx.executeSql('DROP TABLE IF EXISTS mgc.players');
                 }
             );
         }
 
+        function getPlayers() {
+            var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
+
+            db.transaction (
+                function(tx) {
+                    var rs = tx.executeSql('SELECT NAME, COLOR FROM players');
+
+                    for (var i = 0; i < rs.rows.length; i++) {
+                        playerListModel.append( {
+                                           player: rs.rows.item(i).ID,
+                                           name: rs.rows.item(i).NAME,
+                                           color: rs.rows.item(i).COLOR } )
+                    }
+
+                    if (playerListModel.count === 0) {
+                        playerListModel.append({ "player": 1, "name": "", "color": "red" })
+                    }
+                }
+            );
+        }
+
+        function addPlayer(index, name, color) {
+            var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
+
+            db.transaction (
+                function(tx) {
+                    // Create db if it doesn't already exist
+                    tx.executeSql('CREATE TABLE IF NOT EXISTS players(
+                                ID          INTEGER PRIMARY KEY,
+                                NAME        TEXT,
+                                COLOR       TEXT)');
+
+                    tx.executeSql('INSERT INTO players VALUES(?, ?, ?)', [index, name, color]);
+                }
+            );
+            playerListModel.append({"player": index, "name": name, "color": color});
+        }
+
         // A card-looking element which holds the player details
         delegate: ItemDelegate {
-            id: playerCard
+            id: player
 
             padding: 8
             height: Math.max(Math.min(Screen.height / 14, Window.height / 5), 50)
@@ -73,6 +102,12 @@ Page {
 
             //When card gains focus, just give focus to the name input field.
             onActiveFocusChanged: nameField.forceActiveFocus()
+
+            Component.onCompleted: {
+                playerList.removePlayersTable(); // For dev purposes
+                playerList.currentIndex = playerListModel.count - 1
+                forceActiveFocus(playerList.currentItem)
+            }
 
             background: Rectangle {
                 radius: 3
@@ -92,6 +127,18 @@ Page {
                 TextField {
                     id: nameField
 
+                    onDisplayTextChanged: {
+                        if (acceptableInput) {
+                            playerList.hasPlayersChanged(true)
+                        }
+                    }
+
+                    onEditingFinished: {
+                        if (playerListModel.count === index + 1) {
+                            playerList.addPlayer(index + 1, displayText, parent.ComboBox.currentColor)
+                        }
+                    }
+
                     Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
                     Layout.leftMargin: 16
 
@@ -99,11 +146,6 @@ Page {
                     //: This is the placeholderText for player name input field.
                     placeholderText: qsTr("Player Name")
                     validator: RegExpValidator { regExp: (/[A-Öa-ö ]+/) }
-
-                    onAccepted: {
-                        if (playerList.nextItemInFocusChain(true).acceptableInput)
-                            players.append({}); playerList.currentIndex = index + 1
-                    }
                 }
 
                 ComboBox {
@@ -139,12 +181,12 @@ Page {
                             }
                         }
 
-                        //						background: Rectangle { color: "transparent" }
+                        //                        background: Rectangle { color: "transparent" }
                     }
 
                     contentItem: Rectangle {
                         radius: 3
-                        color: playerColor(index)
+                        color: playerList.assignColor(index)
                         layer {
                             enabled: true
                             effect: ElevationEffect { elevation: 1 }
@@ -161,9 +203,9 @@ Page {
         }
 
         model: ListModel {
-            id: players
+            id: playerListModel
 
-            ListElement { player: 1; name: ""; color: "red" }
+            Component.onCompleted: playerList.getPlayers()
         }
 
         footer: ColumnLayout {
@@ -188,10 +230,12 @@ Page {
                 onPressed: { stackView.push("qrc:/pages/Overview.qml") }
 
                 Connections {
-                    target: playerList.model
+                    target: playerList
 
-                    onCountChanged: {
-                        doneButton.enabled = true
+                    onHasPlayersChanged: {
+                        if (hasPlayer) {
+                            doneButton.enabled = true
+                        }
                     }
                 }
             }
@@ -206,18 +250,4 @@ Page {
             }
         }
     }
-
-    /*
-    Loader {
-        id: buttonLoader
-
-        Connections {
-            target: playerList
-
-            onPlayerAdded: {
-                buttonLoader.source = "qrc:/Components/Menu.qml"
-            }
-        }
-    }
-    */
 }

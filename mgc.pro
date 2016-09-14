@@ -16,8 +16,9 @@ lupdate_only {
 }
 
 OTHER_FILES += \
-    /Components/*.qml \
-    pages/*.qml
+    Components/*.qml \
+    pages/*.qml \
+    *.qml
 
 RESOURCES += \
     mgc.qrc
