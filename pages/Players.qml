@@ -99,51 +99,47 @@ Page {
         anchors { margins: 20; fill: parent }
 
         // A card-looking element which holds the player details
-        delegate: ItemDelegate {
+        delegate: Rectangle {
             id: player
+
+            radius: 3
+            // TODO: Fix this color shit
+            color: player.model.color
+            layer { enabled: true; effect: ElevationEffect { elevation: 1 } }
 
             Component.onCompleted: {
                 playerList.currentIndex = playerListModel.count - 1
                 forceActiveFocus(playerList.currentItem)
             }
 
-            width: displayName.width
+            width: Math.max(200, Math.min(Window.width * 0.8, 400))
+            height: Math.max(displayName.height * 2, Math.min(Window.height / 6, 50))
 
-            spacing: 20
 
-            background: Rectangle {
-                radius: 3
-                color: Material.background
-                anchors {
-                    fill: parent
+            RowLayout {
+                id: playerInfo
+
+                anchors.verticalCenter: parent.verticalCenter
+
+                Rectangle {
+                    id: colorIndicator
+                    radius: 3
+                    color: player.color
+
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: height
                 }
 
-                layer {
-                    enabled: true
-                    effect: ElevationEffect { elevation: 1 }
+                Text {
+                    id: displayName
+
+                    text: name
+                    color: Material.foreground
+                    padding: 8
+                    verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignLeft
                 }
-            }
 
-            Text {
-                id: displayName
 
-                text: name
-
-                anchors.centerIn: parent
-                padding: 8
-                verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter
-
-                color: Material.foreground
-            }
-
-            Rectangle {
-                radius: 3
-                color: color
-
-                layer {
-                    enabled: true
-                    effect: ElevationEffect { elevation: 1 }
-                }
             }
         }
 
@@ -164,16 +160,15 @@ Page {
                 RowLayout {
                     id: newPlayer
 
-                    //height: Math.max(Math.min(Screen.height / 14, Window.height / 5), 50)
 
                     spacing: 20
-                    //anchors { fill: parent; margins: 0 }
 
                     TextField {
                         id: nameField
 
                         onEditingFinished: {
                             if (playerListModel.count === playerList.currentIndex + 1) {
+                                // TODO: either convert currentColor into a string or store it as an appropriate type in db
                                 addPlayer(playerList.count + 1, displayText, colorChooser.currentColor)
                             }
                         }
