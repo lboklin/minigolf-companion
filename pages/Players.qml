@@ -16,6 +16,69 @@ Page {
 
     background: Rectangle { color: Qt.darker(Material.background, 1.02) }
 
+    // This function is for cycling through an array of colors and assign it to players
+    function assignColor(index) {
+        var colors = [Material.color(Material.Red),
+                      Material.color(Material.Blue),
+                      Material.color(Material.Green),
+                      Material.color(Material.Yellow),
+                      Material.color(Material.Purple),
+                      Material.color(Material.Amber)];
+        index = index % colors.length
+
+        return colors[index];
+    }
+
+    // TODO: Make work
+    function removePlayersTable(name, color) {
+        var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
+
+        db.transaction (
+                    function(tx) {
+                        tx.executeSql('DROP TABLE IF EXISTS mgc.players');
+                    }
+                    );
+    }
+
+    function getPlayers() {
+        var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
+
+        db.transaction (
+                    function(tx) {
+                        var rs = tx.executeSql('SELECT NAME, COLOR FROM players');
+
+                        for (var i = 0; i < rs.rows.length; i++) {
+                            playerListModel.append( {
+                                                       player: rs.rows.item(i).ID,
+                                                       name: rs.rows.item(i).NAME,
+                                                       color: rs.rows.item(i).COLOR } )
+                        }
+
+                        if (playerListModel.count === 0) {
+                            playerListModel.append({ "player": 1, "name": "", "color": "red" })
+                        }
+                    }
+                    );
+    }
+
+    function addPlayer(index, name, color) {
+        var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
+
+        db.transaction (
+                    function(tx) {
+                        // Create db if it doesn't already exist
+                        tx.executeSql('CREATE TABLE IF NOT EXISTS players(
+                                ID          INTEGER PRIMARY KEY,
+                                NAME        TEXT,
+                                COLOR       TEXT)');
+
+                        tx.executeSql('INSERT INTO players VALUES(?, ?, ?)', [index, name, color]);
+                    }
+                    );
+        playerListModel.append({"player": index, "name": name, "color": color});
+    }
+
+
     /* This list starts with one element which asks the user to input their details
     ** and it will be populated as players are added. */
     ListView {
@@ -25,93 +88,35 @@ Page {
 
         signal hasPlayersChanged(bool hasPlayer)
 
+        Component.onCompleted: {
+            removePlayersTable(); // For dev purposes
+        }
+
         //This prevents the children items popping in and out as they disappear.
         displayMarginBeginning: 50; displayMarginEnd: displayMarginBeginning
 
         spacing: 10
         anchors { margins: 20; fill: parent }
 
-        // This function is for cycling through an array of colors to assign automatically to players
-        function assignColor(index) {
-            var colors = [Material.color(Material.Red),
-                          Material.color(Material.Blue),
-                          Material.color(Material.Green),
-                          Material.color(Material.Yellow),
-                          Material.color(Material.Purple),
-                          Material.color(Material.Amber)];
-            index = index % colors.length
-
-            return colors[index];
-        }
-
-        function removePlayersTable(name, color) {
-            var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
-
-            db.transaction (
-                function(tx) {
-                    tx.executeSql('DROP TABLE IF EXISTS mgc.players');
-                }
-            );
-        }
-
-        function getPlayers() {
-            var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
-
-            db.transaction (
-                function(tx) {
-                    var rs = tx.executeSql('SELECT NAME, COLOR FROM players');
-
-                    for (var i = 0; i < rs.rows.length; i++) {
-                        playerListModel.append( {
-                                           player: rs.rows.item(i).ID,
-                                           name: rs.rows.item(i).NAME,
-                                           color: rs.rows.item(i).COLOR } )
-                    }
-
-                    if (playerListModel.count === 0) {
-                        playerListModel.append({ "player": 1, "name": "", "color": "red" })
-                    }
-                }
-            );
-        }
-
-        function addPlayer(index, name, color) {
-            var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
-
-            db.transaction (
-                function(tx) {
-                    // Create db if it doesn't already exist
-                    tx.executeSql('CREATE TABLE IF NOT EXISTS players(
-                                ID          INTEGER PRIMARY KEY,
-                                NAME        TEXT,
-                                COLOR       TEXT)');
-
-                    tx.executeSql('INSERT INTO players VALUES(?, ?, ?)', [index, name, color]);
-                }
-            );
-            playerListModel.append({"player": index, "name": name, "color": color});
-        }
-
         // A card-looking element which holds the player details
         delegate: ItemDelegate {
             id: player
 
-            padding: 8
-            height: Math.max(Math.min(Screen.height / 14, Window.height / 5), 50)
-            anchors { left: parent.left; right: parent.right }
-
-            //When card gains focus, just give focus to the name input field.
-            onActiveFocusChanged: nameField.forceActiveFocus()
-
             Component.onCompleted: {
-                playerList.removePlayersTable(); // For dev purposes
                 playerList.currentIndex = playerListModel.count - 1
                 forceActiveFocus(playerList.currentItem)
             }
 
+            width: displayName.width
+
+            spacing: 20
+
             background: Rectangle {
                 radius: 3
                 color: Material.background
+                anchors {
+                    fill: parent
+                }
 
                 layer {
                     enabled: true
@@ -119,85 +124,25 @@ Page {
                 }
             }
 
-            contentItem: RowLayout {
+            Text {
+                id: displayName
 
-                spacing: 20
-                anchors { fill: parent; margins: 0 }
+                text: name
 
-                TextField {
-                    id: nameField
+                anchors.centerIn: parent
+                padding: 8
+                verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter
 
-                    onDisplayTextChanged: {
-                        if (acceptableInput) {
-                            playerList.hasPlayersChanged(true)
-                        }
-                    }
+                color: Material.foreground
+            }
 
-                    onEditingFinished: {
-                        if (playerListModel.count === index + 1) {
-                            playerList.addPlayer(index + 1, displayText, parent.ComboBox.currentColor)
-                        }
-                    }
+            Rectangle {
+                radius: 3
+                color: color
 
-                    Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-                    Layout.leftMargin: 16
-
-                    color: Material.foreground
-                    //: This is the placeholderText for player name input field.
-                    placeholderText: qsTr("Player Name")
-                    validator: RegExpValidator { regExp: (/[A-Öa-ö ]+/) }
-                }
-
-                ComboBox {
-                    id: colorChooser
-
-                    property color currentColor: Material.color(Material.Red)
-
-                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                    Layout.rightMargin: 16
-                    Layout.preferredHeight: nameField.height
-                    Layout.preferredWidth: nameField.height
-
-                    activeFocusOnTab: false
-                    displayText: ""
-                    padding: 2
-
-                    model:  [ Material.Red, Material.Blue, Material.Green, Material.Amber, Material.Purple ]
-
-                    popup: Popup {
-                        height: contentHeight
-                        width: colorChooser.width
-
-                        contentItem: ColumnLayout {
-                            anchors.fill: parent
-
-                            Repeater {
-                                height: colorChooser.height
-                                anchors { left: parent.left; right: parent.right }
-
-                                delegate: Rectangle { radius: 3; color: Material.color(modelData) }
-
-                                model: colorChooser.model
-                            }
-                        }
-
-                        //                        background: Rectangle { color: "transparent" }
-                    }
-
-                    contentItem: Rectangle {
-                        radius: 3
-                        color: playerList.assignColor(index)
-                        layer {
-                            enabled: true
-                            effect: ElevationEffect { elevation: 1 }
-                        }
-                    }
-
-                    background: Rectangle { color: "transparent" }
-
-                    onActivated: {
-                        currentColor = model[index]
-                    }
+                layer {
+                    enabled: true
+                    effect: ElevationEffect { elevation: 1 }
                 }
             }
         }
@@ -205,39 +150,112 @@ Page {
         model: ListModel {
             id: playerListModel
 
-            Component.onCompleted: playerList.getPlayers()
+            Component.onCompleted: getPlayers()
         }
 
-        footer: ColumnLayout {
-            id: buttons
-
-            anchors {
-                left: parent.left
-                right: parent.right
+        // Here you add players or go to next page
+        footer: Rectangle {
+            layer {
+                enabled: true
+                effect: ElevationEffect { elevation: 1 }
             }
 
-            Button {
-                id: doneButton
+            ColumnLayout {
+                RowLayout {
+                    id: newPlayer
 
-                enabled: false
-                flat: true
-                //: This is the label on the button to finish adding players and go to next page.
-                text: qsTr("Done")
-                anchors {
-                    horizontalCenter: parent.horizontalCenter
-                }
+                    //height: Math.max(Math.min(Screen.height / 14, Window.height / 5), 50)
 
-                onPressed: { stackView.push("qrc:/pages/Overview.qml") }
+                    spacing: 20
+                    //anchors { fill: parent; margins: 0 }
 
-                Connections {
-                    target: playerList
+                    TextField {
+                        id: nameField
 
-                    onHasPlayersChanged: {
-                        if (hasPlayer) {
-                            doneButton.enabled = true
+                        onEditingFinished: {
+                            if (playerListModel.count === playerList.currentIndex + 1) {
+                                addPlayer(playerList.count + 1, displayText, colorChooser.currentColor)
+                            }
+                        }
+
+                        Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+                        Layout.leftMargin: 16
+                        Layout.preferredHeight: Math.max(Math.min(Screen.height / 14, Window.height / 5), 50)
+
+                        color: Material.foreground
+                        //: This is the placeholderText for player name input field.
+                        placeholderText: qsTr("Player Name")
+                        validator: RegExpValidator { regExp: (/[A-Öa-ö0-9 ]+/) }
+                    }
+
+                    ComboBox {
+                        id: colorChooser
+
+                        property color currentColor: Material.color(Material.Red)
+
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        Layout.rightMargin: 16
+                        Layout.preferredHeight: nameField.height
+                        Layout.preferredWidth: nameField.height
+
+                        activeFocusOnTab: false
+                        displayText: ""
+                        padding: 2
+
+                        model:  [ Material.Red, Material.Blue, Material.Green, Material.Amber, Material.Purple ]
+
+                        popup: Popup {
+                            height: contentHeight
+                            width: colorChooser.width
+
+                            contentItem: ColumnLayout {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+
+                                Repeater {
+                                    height: colorChooser.height
+                                    anchors { left: parent.left; right: parent.right }
+
+                                    delegate: Rectangle { radius: 3; color: Material.color(modelData) }
+
+                                    model: colorChooser.model
+                                }
+                            }
+
+                            //                        background: Rectangle { color: "transparent" }
+                        }
+
+                        contentItem: Rectangle {
+                            radius: 3
+                            color: assignColor(playerList.count + 1)
+                            layer {
+                                enabled: true
+                                effect: ElevationEffect { elevation: 1 }
+                            }
+                        }
+
+                        background: Rectangle { color: "transparent" }
+
+                        onActivated: {
+                            currentColor = model[index]
                         }
                     }
                 }
+
+                Button {
+                    id: doneButton
+
+                    enabled: playerList.count > 0 ? true : false
+                    flat: true
+                    //: This is the label on the button to finish adding players and go to next page.
+                    text: qsTr("Done")
+                    anchors {
+                        horizontalCenter: parent.horizontalCenter
+                    }
+
+                    onPressed: { stackView.push("qrc:/pages/Overview.qml") }
+                }
+
             }
         }
 
