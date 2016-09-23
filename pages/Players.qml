@@ -40,7 +40,7 @@ Page {
 
             radius: 3
             // TODO: Fix this color shit
-            color: player.model.color
+            color: model.color
             layer { enabled: true; effect: ElevationEffect { elevation: 1 } }
 
             Component.onCompleted: {
@@ -104,9 +104,9 @@ Page {
                                 }
 
                                 // For dev
-                                //                        if (count === 0) {
-                                //                            append({ "player": 1, "name": "", "color": "red" })
-                                //                        }
+                                if (count === 0) {
+                                    append({ "player": 1, "name": "", "color": "red" })
+                                }
                             }
                             );
             }
@@ -155,7 +155,7 @@ Page {
                                             tx.executeSql('CREATE TABLE IF NOT EXISTS players(
                                                             ID          INTEGER PRIMARY KEY,
                                                             NAME        TEXT,
-                                                            COLOR       TEXT)');
+                                                            COLOR       BLOB)');
 
                                                 tx.executeSql('INSERT INTO players VALUES(?, ?, ?)', [index, name, color]);
                                             }
