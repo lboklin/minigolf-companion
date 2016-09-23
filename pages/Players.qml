@@ -15,70 +15,6 @@ Page {
     title: qsTr("Players")
 
     background: Rectangle { color: Qt.darker(Material.background, 1.02) }
-
-    // This function is for cycling through an array of colors and assign it to players
-    function assignColor(index) {
-        var colors = [Material.color(Material.Red),
-                      Material.color(Material.Blue),
-                      Material.color(Material.Green),
-                      Material.color(Material.Yellow),
-                      Material.color(Material.Purple),
-                      Material.color(Material.Amber)];
-        index = index % colors.length
-
-        return colors[index];
-    }
-
-    // TODO: Make work
-    function removePlayersTable(name, color) {
-        var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
-
-        db.transaction (
-                    function(tx) {
-                        tx.executeSql('DROP TABLE IF EXISTS mgc.players');
-                    }
-                    );
-    }
-
-    function getPlayers() {
-        var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
-
-        db.transaction (
-                    function(tx) {
-                        var rs = tx.executeSql('SELECT NAME, COLOR FROM players');
-
-                        for (var i = 0; i < rs.rows.length; i++) {
-                            playerListModel.append( {
-                                                       player: rs.rows.item(i).ID,
-                                                       name: rs.rows.item(i).NAME,
-                                                       color: rs.rows.item(i).COLOR } )
-                        }
-
-                        if (playerListModel.count === 0) {
-                            playerListModel.append({ "player": 1, "name": "", "color": "red" })
-                        }
-                    }
-                    );
-    }
-
-    function addPlayer(index, name, color) {
-        var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
-
-        db.transaction (
-                    function(tx) {
-                        // Create db if it doesn't already exist
-                        tx.executeSql('CREATE TABLE IF NOT EXISTS players(
-                                ID          INTEGER PRIMARY KEY,
-                                NAME        TEXT,
-                                COLOR       TEXT)');
-
-                        tx.executeSql('INSERT INTO players VALUES(?, ?, ?)', [index, name, color]);
-                    }
-                    );
-        playerListModel.append({"player": index, "name": name, "color": color});
-    }
-
-
     /* This list starts with one element which asks the user to input their details
     ** and it will be populated as players are added. */
     ListView {
@@ -147,6 +83,33 @@ Page {
             id: playerListModel
 
             Component.onCompleted: getPlayers()
+
+            function getPlayers() {
+                var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
+
+                db.transaction (
+                            function(tx) {
+                                // Create db if it doesn't already exist
+                                tx.executeSql('CREATE TABLE IF NOT EXISTS players(
+                                ID          INTEGER PRIMARY KEY,
+                                NAME        TEXT,
+                                COLOR       TEXT)');
+                                var rs = tx.executeSql('SELECT NAME, COLOR FROM players');
+
+                                for (var i = 0; i < rs.rows.length; i++) {
+                                    append( {
+                                                               player: rs.rows.item(i).ID,
+                                                               name: rs.rows.item(i).NAME,
+                                                               color: rs.rows.item(i).COLOR } )
+                                }
+
+                                // For dev
+                                //                        if (count === 0) {
+                                //                            append({ "player": 1, "name": "", "color": "red" })
+                                //                        }
+                            }
+                            );
+            }
         }
 
         // Here you add players or go to next page
@@ -181,31 +144,49 @@ Page {
                         //: This is the placeholderText for player name input field.
                         placeholderText: qsTr("Player Name")
                         validator: RegExpValidator { regExp: (/[A-Öa-ö0-9 ]+/) }
-                    }
 
-                    ComboBox {
-                        id: colorChooser
+                        function addPlayer(index, name, color) {
 
-                        property color currentColor: Material.color(Material.Red)
+                            var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
 
-                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                        Layout.rightMargin: 16
-                        Layout.preferredHeight: nameField.height
-                        Layout.preferredWidth: nameField.height
+                            db.transaction (
+                                        function(tx) {
+                                            // Create db if it doesn't already exist
+                                            tx.executeSql('CREATE TABLE IF NOT EXISTS players(
+                                                            ID          INTEGER PRIMARY KEY,
+                                                            NAME        TEXT,
+                                                            COLOR       TEXT)');
 
-                        activeFocusOnTab: false
-                        displayText: ""
-                        padding: 2
+                                                tx.executeSql('INSERT INTO players VALUES(?, ?, ?)', [index, name, color]);
+                                            }
+                                            );
+                                playerListModel.append({"player": index, "name": name, "color": color});
+                            }
+                        }
 
-                        model:  [ Material.Red, Material.Blue, Material.Green, Material.Amber, Material.Purple ]
+                        ComboBox {
+                            id: colorChooser
 
-                        popup: Popup {
-                            height: contentHeight
-                            width: colorChooser.width
+                            property color currentColor: Material.color(Material.Red)
 
-                            contentItem: ColumnLayout {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
+                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            Layout.rightMargin: 16
+                            Layout.preferredHeight: nameField.height
+                            Layout.preferredWidth: nameField.height
+
+                            activeFocusOnTab: false
+                            displayText: ""
+                            padding: 2
+
+                            model:  [ Material.Red, Material.Blue, Material.Green, Material.Amber, Material.Purple ]
+
+                            popup: Popup {
+                                height: contentHeight
+                                width: colorChooser.width
+
+                                contentItem: ColumnLayout {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
 
                                 Repeater {
                                     height: colorChooser.height
@@ -226,6 +207,19 @@ Page {
                             layer {
                                 enabled: true
                                 effect: ElevationEffect { elevation: 1 }
+                            }
+
+                            function assignColor(index) {
+                                // Cycle through an array of colors and assign it to players
+                                var colors = [Material.color(Material.Red),
+                                              Material.color(Material.Blue),
+                                              Material.color(Material.Green),
+                                              Material.color(Material.Yellow),
+                                              Material.color(Material.Purple),
+                                              Material.color(Material.Amber)];
+                                index = index % colors.length
+
+                                return colors[index];
                             }
                         }
 
@@ -262,5 +256,17 @@ Page {
                 margins: -12
             }
         }
+
+        // TODO: Make work
+        function removePlayersTable(name, color) {
+            var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
+
+            db.transaction (
+                        function(tx) {
+                            tx.executeSql('DROP TABLE IF EXISTS players');
+                        }
+                        );
+        }
+
     }
 }
