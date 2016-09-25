@@ -69,6 +69,7 @@ Page {
                 id: displayName
 
                 text: name
+                font.pixelSize: 18
                 color: Material.foreground
                 padding: 8
 
@@ -117,126 +118,191 @@ Page {
         footer: Rectangle {
             id: newPlayer
 
-            height: 50
+            color: Material.background
+            height: colorChooser.height + instruction.height + 20
             anchors {
                 left: parent.left
                 right: parent.right
             }
 
-            radius: 3
-            layer { enabled: true; effect: ElevationEffect { elevation: 1 } }
+            radius: 6
+            layer { enabled: true; effect: ElevationEffect { elevation: 8 } }
 
-            ComboBox {
-                id: colorChooser
+            ColumnLayout {
+                spacing: 0
 
-                property string currentColor
-
-                width: height
                 anchors {
-                    top: parent.top
                     left: parent.left
-                    bottom: parent.bottom
+                    right: parent.right
                 }
 
-                activeFocusOnTab: false
-                displayText: ""
-                padding: 2
+                Text {
+                    id: instruction
 
-                model:  [ Material.Red, Material.Blue, Material.Green, Material.Amber, Material.Purple ]
+                    padding: 10
+                    text: "Add Player:"
+                    font.pixelSize: 14
 
-                popup: Popup {
-                    height: contentHeight
-                    width: colorChooser.width
-
-                    contentItem: ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-
-                        Repeater {
-                            height: colorChooser.height
-                            anchors { left: parent.left; right: parent.right }
-
-                            delegate: Rectangle { radius: 3; color: Material.color(modelData) }
-
-                            model: colorChooser.model
-                        }
-                    }
-
-                    //                        background: Rectangle { color: "transparent" }
                 }
 
-                contentItem: Rectangle {
-                    Component.onCompleted: {
-                        colorChooser.currentColor = getColor(playerList.count + 1)
-                    }
+                Rectangle {
+                    id: newPlayerCard
 
+                    color: Material.background
                     radius: 3
-                    color: colorChooser.currentColor
-                    layer {
-                        enabled: true
-                        effect: ElevationEffect { elevation: 1 }
-                    }
+                    layer { enabled: true; effect: ElevationEffect { elevation: 1 } }
 
-                    function getColor(index) {
-                        // Cycle through an array of colors and assign it to players
-                        var colors = [Material.color(Material.Red),
-                                      Material.color(Material.Blue),
-                                      Material.color(Material.Green),
-                                      Material.color(Material.Yellow),
-                                      Material.color(Material.Purple),
-                                      Material.color(Material.Amber)];
-                        index = index % colors.length
+                    Layout.leftMargin: 10
+                    Layout.rightMargin: 10
+                    Layout.preferredHeight: 50
+                    Layout.fillWidth: true
 
-                        return colors[index];
-                    }
-                }
+                    RowLayout {
+                        anchors {
+                            left: parent.left
+                            right: parent.right
+                        }
 
-                background: Rectangle { color: "transparent" }
+                        ComboBox {
+                            id: colorChooser
 
-                onActivated: {
-                    currentColor = model[index]
-                }
-            }
+                            property string currentColor
 
-            TextField {
-                id: nameField
+                            width: height
+                            anchors {
+                                top: parent.top
+                                left: parent.left
+                                bottom: parent.bottom
+                            }
 
-                onEditingFinished: {
-                    addPlayer(playerListModel.count + 1, displayText, colorChooser.currentColor)
-                    selectAll()
-                    remove(selectionStart, selectionEnd)
-                    deselect()
-                    forceActiveFocus()
-                    colorChooser.currentColor = colorChooser.contentItem.getColor(playerList.count + 1)
-                }
+                            activeFocusOnTab: false
+                            displayText: ""
+                            padding: 2
 
-                anchors {
-                    top: parent.top
-                    left: colorChooser.right; right: parent.right
-                    bottom: parent.bottom
-                }
+                            model:  [ Material.Red, Material.Blue, Material.Green, Material.Amber, Material.Purple ]
 
-                color: Material.foreground
-                //: This is the placeholderText for player name input field.
-                placeholderText: qsTr("Player Name")
-                validator: RegExpValidator { regExp: (/[A-Öa-ö0-9 ]+/) }
+                            popup: Popup {
+                                height: contentHeight
+                                width: colorChooser.width
 
-                function addPlayer(index, name, color) {
+                                contentItem: ColumnLayout {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
 
-                    var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
+                                    Repeater {
+                                        height: colorChooser.height
+                                        anchors { left: parent.left; right: parent.right }
 
-                    db.transaction (
-                                function(tx) {
-                                    // Create db if it doesn't already exist
-                                    tx.executeSql('CREATE TABLE IF NOT EXISTS players(
+                                        delegate: Rectangle { radius: 3; color: Material.color(modelData) }
+
+                                        model: colorChooser.model
+                                    }
+                                }
+
+                                //                        background: Rectangle { color: "transparent" }
+                            }
+
+                            contentItem: Rectangle {
+                                Component.onCompleted: {
+                                    colorChooser.currentColor = getColor(playerList.count + 1)
+                                }
+
+                                radius: 3
+                                color: colorChooser.currentColor
+                                layer {
+                                    enabled: true
+                                    effect: ElevationEffect { elevation: 1 }
+                                }
+
+                                function getColor(index) {
+                                    // Cycle through an array of colors and assign it to players
+                                    var colors = [Material.color(Material.Red),
+                                                  Material.color(Material.Blue),
+                                                  Material.color(Material.Green),
+                                                  Material.color(Material.Yellow),
+                                                  Material.color(Material.Purple),
+                                                  Material.color(Material.Amber)];
+                                    index = index % colors.length
+
+                                    return colors[index];
+                                }
+                            }
+
+                            background: Rectangle { color: "transparent" }
+
+                            onActivated: {
+                                currentColor = model[index]
+                            }
+                        }
+
+                        TextField {
+                            id: nameField
+
+                            onEditingFinished: {
+                                addPlayer(playerListModel.count + 1, displayText, colorChooser.currentColor)
+                                selectAll()
+                                remove(selectionStart, selectionEnd)
+                                deselect()
+                                forceActiveFocus()
+                                colorChooser.currentColor = colorChooser.contentItem.getColor(playerList.count + 1)
+                            }
+
+                            anchors {
+                                top: parent.top
+                                left: colorChooser.right
+                                leftMargin: 10
+                                bottom: parent.bottom
+                            }
+
+                            color: Material.foreground
+                            //: This is the placeholderText for player name input field.
+                            placeholderText: qsTr("Player Name")
+                            validator: RegExpValidator { regExp: (/[A-Öa-ö0-9 ]+/) }
+
+                            function addPlayer(index, name, color) {
+
+                                var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
+
+                                db.transaction (
+                                            function(tx) {
+                                                // Create db if it doesn't already exist
+                                                tx.executeSql('CREATE TABLE IF NOT EXISTS players(
                                                             ID          INTEGER PRIMARY KEY,
                                                             NAME        TEXT,
                                                             COLOR       BLOB)');
 
-                                    tx.executeSql('INSERT INTO players VALUES(?, ?, ?)', [index, name, color]);
-                                }
-                                );
-                    playerListModel.append({"player": index, "name": name, "color": color});
+                                                tx.executeSql('INSERT INTO players VALUES(?, ?, ?)', [index, name, color]);
+                                            }
+                                            );
+                                playerListModel.append({"player": index, "name": name, "color": color});
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.alignment: Qt.AlignRight
+                            anchors.right: parent.right
+                            anchors.rightMargin: 10
+                            width: 36
+                            height: width
+                            color: Material.background
+
+                            radius: 3
+                            layer { enabled: true; effect: ElevationEffect { elevation: 1 } }
+
+                            Image {
+                                id: addPlayerButton
+
+                                visible: true
+                                anchors.centerIn: parent
+                                fillMode: Image.Pad
+                                mipmap: true
+                                sourceSize.height: 32
+                                source: "qrc:/images/icons/done.svg"
+                                opacity: 0.54
+                                smooth: true
+                            }
+                        }
+                    }
                 }
             }
         }

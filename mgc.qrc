@@ -41,5 +41,7 @@
         <file>mgc_sv_se.ts</file>
         <file>README.md</file>
         <file>images/courses/course1.png</file>
+        <file>images/icons/done.svg</file>
+        <file>images/icons/trash.svg</file>
     </qresource>
 </RCC>
