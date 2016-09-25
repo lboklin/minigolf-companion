@@ -38,44 +38,44 @@ Page {
         delegate: Rectangle {
             id: player
 
-            radius: 3
-            // TODO: Fix this color shit
-            color: model.color
-            layer { enabled: true; effect: ElevationEffect { elevation: 1 } }
-
             Component.onCompleted: {
                 playerList.currentIndex = playerListModel.count - 1
                 forceActiveFocus(playerList.currentItem)
             }
 
+            radius: 3
+            layer { enabled: true; effect: ElevationEffect { elevation: 1 } }
+
             width: Math.max(200, Math.min(Window.width * 0.8, 400))
             height: Math.max(displayName.height * 2, Math.min(Window.height / 6, 50))
 
+            Rectangle {
+                id: colorIndicator
 
-            RowLayout {
-                id: playerInfo
+                radius: 3
+                color: model.color
 
-                anchors.verticalCenter: parent.verticalCenter
-
-                Rectangle {
-                    id: colorIndicator
-                    radius: 3
-                    color: player.color
-
-                    Layout.fillHeight: true
-                    Layout.preferredWidth: height
+                anchors {
+                    top: parent.top
+                    left: parent.left
+                    bottom: parent.bottom
                 }
+                width: height
+                //                anchors.verticalCenter: parent.verticalCenter
+            }
 
-                Text {
-                    id: displayName
+            Text {
+                id: displayName
 
-                    text: name
-                    color: Material.foreground
-                    padding: 8
-                    verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignLeft
+                text: name
+                color: Material.foreground
+                padding: 8
+
+                anchors {
+                    left: colorIndicator.right
+                    verticalCenter: parent.verticalCenter
                 }
-
-
+                verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignLeft
             }
         }
 
@@ -105,7 +105,7 @@ Page {
 
                                 // For dev
                                 if (count === 0) {
-                                    append({ "player": 1, "name": "", "color": "red" })
+                                    append({ "player": 1, "name": "No One", "color": "red" })
                                 }
                             }
                             );
