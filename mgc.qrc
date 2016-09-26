@@ -43,5 +43,8 @@
         <file>images/courses/course1.png</file>
         <file>images/icons/done.svg</file>
         <file>images/icons/trash.svg</file>
+        <file>Components/FlatButton.qml</file>
+        <file>Components/Icon.qml</file>
+        <file>Components/PlayerCard.qml</file>
     </qresource>
 </RCC>

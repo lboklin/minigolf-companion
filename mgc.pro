@@ -27,7 +27,8 @@ TRANSLATIONS = mgc_sv_se.ts
 
 DISTFILES += \
     LICENSE \
-    README.md
+    README.md \
+    Components/FlatButton.qml
 
 android {
     DISTFILES += \

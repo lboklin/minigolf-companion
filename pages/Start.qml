@@ -24,7 +24,7 @@ Page {
 		height: 128
 
 		Repeater {
-			delegate: Button {
+            delegate: FlatButton {
 				id: button
 
 				onClicked: stackView.push("qrc:/pages/%1.qml".arg(model.page))
@@ -33,8 +33,7 @@ Page {
 				text: model.label
 				height: Math.max(Math.min(implicitHeight * 2, window.height / 5), implicitHeight)
 				anchors {
-					left: parent.left
-					right: parent.right
+                    horizontalCenter: parent.horizontalCenter
 				}
 			}
 
