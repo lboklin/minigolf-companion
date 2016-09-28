@@ -24,38 +24,38 @@ Rectangle {
     width: Math.max(200, Math.min(Window.width * 0.8, 400))
     height: 50
     
-    Rectangle {
-        id: colorSquare
+//    Rectangle {
+//        id: colorSquare
 
-        radius: parent.radius
-        color: playerColor
+//        radius: parent.radius
+//        color: playerColor
 
-        width: height + radius
-        anchors {
-            top: parent.top
-            left: parent.left
-            bottom: parent.bottom
-        }
+//        width: height + radius
+//        anchors {
+//            top: parent.top
+//            left: parent.left
+//            bottom: parent.bottom
+//        }
 
-        // Fills in the square's right side to cover the rounded corners with nice sharp ones
-        Rectangle {
-            color: parent.color
-            width: parent.radius
-            anchors {
-                top: parent.top
-                right: parent.right
-                bottom: parent.bottom
-            }
-        }
-    }
+//        // Fills in the square's right side to cover the rounded corners with nice sharp ones
+//        Rectangle {
+//            color: parent.color
+//            width: parent.radius
+//            anchors {
+//                top: parent.top
+//                right: parent.right
+//                bottom: parent.bottom
+//            }
+//        }
+//    }
 
     ComboBox {
-        id: colorChooser
+        id: colorSquare
 
-        Component.onCompleted: { currentColor = playerColor === "transparent" ? getColor(playerList.count + 1) : "transparent" }
+        // When a color is chosen from the popup
+//        onActivated: { indicator.color = model[index] }
 
-        property color currentColor
-
+        displayText: ""
         width: height
         anchors {
             top: parent.top
@@ -64,10 +64,38 @@ Rectangle {
         }
 
         activeFocusOnTab: false
-        displayText: ""
 
-        model:  [ Material.Red, Material.Blue, Material.Green, Material.Amber, Material.Purple ]
+//        popup.transformOrigin: Popup.Right
+//        popup.x: x + width
+//        popup.y: y - width * currentIndex
+//        popup.onAboutToShow: currentIndex = find(playerColor)
 
+        model:  [ Material.color(Material.Red),
+                Material.color(Material.Blue),
+                Material.color(Material.Green),
+                Material.color(Material.Amber),
+                Material.color(Material.Purple) ]
+
+        delegate: Rectangle {
+            radius: 0
+            anchors.margins: 0
+            width: player.height
+            height: width
+            color: modelData
+            clip: true
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    colorSquare.indicator.color = modelData
+                    colorSquare.activated(index)
+                    colorSquare.currentIndex = index
+                    colorSquare.popup.close()
+                }
+            }
+        }
+
+        /*
         popup: Popup {
             height: contentHeight
             width: player.height
@@ -75,45 +103,41 @@ Rectangle {
 
             contentItem: ColumnLayout {
                 spacing: 0
+                height: 500
+                width: height
 
                 Repeater {
                     delegate: Rectangle {
-                        height: colorChooser.height
-                        color: Material.color(modelData)
+                        radius: 0
+                        anchors.margins: 0
                         width: player.height
+                        height: width
+                        color: Material.color(modelData)
                     }
 
-                    model: colorChooser.model
+                    model: colorSquare.model
                 }
             }
 
             background: Rectangle { color: "transparent" }
         }
+        */
 
         indicator: Rectangle {
 
+            color: playerColor
+
             radius: 4
-            color: colorChooser.currentColor
-            //                            layer { enabled: true; effect: ElevationEffect { elevation: 1 } }
+            width: height + radius
+            anchors.fill: parent
 
-            function getColor(index) {
-                // Cycle through an array of colors and assign it to players
-                var colors = [Material.color(Material.Red),
-                              Material.color(Material.Blue),
-                              Material.color(Material.Green),
-                              Material.color(Material.Yellow),
-                              Material.color(Material.Purple),
-                              Material.color(Material.Amber)];
-                index = index % colors.length
-
-                return colors[index];
+            // Fills in the square's right side to cover the rounded corners with nice sharp ones
+            Rectangle {
+                color: parent.color
+                height: parent.height
+                width: parent.radius
+                anchors.right: parent.right
             }
-        }
-
-        background: Rectangle { color: "transparent" }
-
-        onActivated: {
-            currentColor = model[index]
         }
     }
     
@@ -161,5 +185,14 @@ Rectangle {
             color: "black"
             pixelSize: 24
         }
+    }
+
+    function newColor(index) {
+        // Cycle through an array of colors and assign it to players
+        var colors = colorSquare.model;
+        index = index % (colors.length - 1)
+        var color = colors[index]
+
+        return color;
     }
 }

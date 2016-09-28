@@ -27,6 +27,8 @@ Page {
 
         //        Component.onCompleted: { removePlayersTable(); /* For dev purposes */ }
 
+        currentIndex: playerListModel.count - 1
+
         //This prevents the children items popping in and out as they disappear.
         displayMarginBeginning: 50; displayMarginEnd: displayMarginBeginning
         footerPositioning: ListView.OverlayFooter
@@ -38,13 +40,12 @@ Page {
         delegate: PlayerCard {
             id: player
 
-            Component.onCompleted: { playerList.currentIndex = playerListModel.count - 1 }
-
             playerColor: model.color
             playerName: model.name
             iconSource: "qrc:/images/icons/trash.svg"
         }
 
+        // Populated from an sqlite database
         model: ListModel {
             id: playerListModel
 
@@ -113,7 +114,7 @@ Page {
             id: newPlayerPanel
 
             color: Material.background
-            height: colorChooser.height + instruction.height + 20
+            height: newPlayerCard.height + instruction.height + 20
             anchors {
                 left: parent.left
                 bottom: bottomBar.top
@@ -151,75 +152,75 @@ Page {
                         rightMargin: 10
                     }
 
-                    playerColor: colorChooser.currentColor
+                    playerColor: newPlayerCard.newColor(playerList.count)
 
-                    colorItem: ComboBox {
-                        id: colorChooser
+//                    colorItem: ComboBox {
+//                        id: colorChooser
 
-                        property color currentColor
+//                        property color currentColor
 
-                        width: height
-                        anchors {
-                            top: parent.top
-                            left: parent.left
-                            bottom: parent.bottom
-                        }
+//                        width: height
+//                        anchors {
+//                            top: parent.top
+//                            left: parent.left
+//                            bottom: parent.bottom
+//                        }
 
-                        activeFocusOnTab: false
-                        displayText: ""
-                        padding: 0
+//                        activeFocusOnTab: false
+//                        displayText: ""
+//                        padding: 0
 
-                        model:  [ Material.Red, Material.Blue, Material.Green, Material.Amber, Material.Purple ]
+//                        model:  [ Material.Red, Material.Blue, Material.Green, Material.Amber, Material.Purple ]
 
-                        popup: Popup {
-                            height: contentHeight
-                            width: colorChooser.width
+//                        popup: Popup {
+//                            height: contentHeight
+//                            width: colorChooser.width
 
-                            contentItem: ColumnLayout {
-                                Repeater {
-                                    delegate: Rectangle {
-                                        radius: 3
-                                        height: colorChooser.height
-                                        color: Material.color(modelData)
-                                        anchors { left: parent.left; right: parent.right }
-                                    }
+//                            contentItem: ColumnLayout {
+//                                Repeater {
+//                                    delegate: Rectangle {
+//                                        radius: 3
+//                                        height: colorChooser.height
+//                                        color: Material.color(modelData)
+//                                        anchors { left: parent.left; right: parent.right }
+//                                    }
 
-                                    model: colorChooser.model
-                                }
-                            }
+//                                    model: colorChooser.model
+//                                }
+//                            }
 
-                            //background: Rectangle { color: "transparent" }
-                        }
+//                            //background: Rectangle { color: "transparent" }
+//                        }
 
-                        contentItem: Rectangle {
-                            Component.onCompleted: {
-                                colorChooser.currentColor = getColor(playerList.count + 1)
-                            }
+//                        contentItem: Rectangle {
+//                            Component.onCompleted: {
+//                                colorChooser.currentColor = getColor(playerList.count + 1)
+//                            }
 
-                            radius: 4
-                            color: colorChooser.currentColor
-//                            layer { enabled: true; effect: ElevationEffect { elevation: 1 } }
+//                            radius: 4
+//                            color: colorChooser.currentColor
+////                            layer { enabled: true; effect: ElevationEffect { elevation: 1 } }
 
-                            function getColor(index) {
-                                // Cycle through an array of colors and assign it to players
-                                var colors = [Material.color(Material.Red),
-                                              Material.color(Material.Blue),
-                                              Material.color(Material.Green),
-                                              Material.color(Material.Yellow),
-                                              Material.color(Material.Purple),
-                                              Material.color(Material.Amber)];
-                                index = index % colors.length
+//                            function getColor(index) {
+//                                // Cycle through an array of colors and assign it to players
+//                                var colors = [Material.color(Material.Red),
+//                                              Material.color(Material.Blue),
+//                                              Material.color(Material.Green),
+//                                              Material.color(Material.Yellow),
+//                                              Material.color(Material.Purple),
+//                                              Material.color(Material.Amber)];
+//                                index = index % colors.length
 
-                                return colors[index];
-                            }
-                        }
+//                                return colors[index];
+//                            }
+//                        }
 
-                        background: Rectangle { color: "transparent" }
+//                        background: Rectangle { color: "transparent" }
 
-                        onActivated: {
-                            currentColor = model[index]
-                        }
-                    }
+//                        onActivated: {
+//                            currentColor = model[index]
+//                        }
+//                    }
 
                     nameItem: TextField {
                         id: nameField
