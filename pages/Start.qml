@@ -14,34 +14,32 @@ Page {
 	ColumnLayout {
 		id: buttonMenu
 
-		anchors {
-//			top: parent.verticalCenter / 2
-//			horizontalCenter: parent.horizontalCenter
+        height: 128
+        anchors {
 			left: parent.left
 			right: parent.right
 			bottom: parent.bottom
 		}
-		height: 128
 
 		Repeater {
-			delegate: Button {
+            delegate: FlatButton {
 				id: button
 
-				onClicked: stackView.push("qrc:/pages/%1.qml".arg(model.page))
+//				onClicked: stackView.push("qrc:/pages/%1.qml".arg(model.page))
+                onClicked: stackView.push("qrc:/pages/%1.qml".arg(model.request))
 
 				flat: true
 				text: model.label
 				height: Math.max(Math.min(implicitHeight * 2, window.height / 5), implicitHeight)
 				anchors {
-					left: parent.left
-					right: parent.right
+                    horizontalCenter: parent.horizontalCenter
 				}
 			}
 
 			model: ListModel {
 				//:This string explains what happens when the button is pressed. this is located in the main menu.
-				ListElement { label: qsTr("Continue Round"); request: "Continue Round"; page: "Overview" }
-				ListElement { label: qsTr("New Round"); request: "New Round"; page: "Players" }
+                ListElement { label: qsTr("Continue Round"); request: "SwipeView"; page: "Overview" }
+                ListElement { label: qsTr("New Round"); request: "SwipeView"; page: "Players" }
 //				ListElement { label: qsTr("History"); request: "History"; page: "Round" }
 			}
 		}

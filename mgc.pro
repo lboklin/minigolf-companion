@@ -16,8 +16,9 @@ lupdate_only {
 }
 
 OTHER_FILES += \
-    /Components/*.qml \
-    pages/*.qml
+    Components/*.qml \
+    pages/*.qml \
+    *.qml
 
 RESOURCES += \
     mgc.qrc
@@ -26,7 +27,9 @@ TRANSLATIONS = mgc_sv_se.ts
 
 DISTFILES += \
     LICENSE \
-    README.md
+    README.md \
+    Components/FlatButton.qml \
+    pages/SwipeView.qml
 
 android {
     DISTFILES += \
