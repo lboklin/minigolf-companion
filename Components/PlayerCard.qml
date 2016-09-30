@@ -10,12 +10,30 @@ import "qrc:/Components"
 Rectangle {
     id: player
 
-    property color playerColor: "transparent"
-    property string playerName: ""
-    property url iconSource
-    property alias colorItem: colorSquare.data
-    property alias nameItem: displayName.data
+    property string playerColor: "transparent"
+    property string playerName: qsTr("Player Name")
+
     property alias buttonItem: cardButton.data
+    property url buttonIcon
+    property color buttonIconColor
+
+    property alias colorItem: colorSquare.data
+
+    property alias nameItem: nameField.data
+
+    // Rightmost button is pressed
+    signal buttonPressed()
+    // Player is finished editing
+    signal finished()
+    // All actions have been taken - free to clear contents
+    signal done()
+
+    onPlayerNameChanged: nameField.text = playerName
+
+    onFinished: playerName = nameField.displayText
+    onDone: nameField.clearField()
+
+    activeFocusOnTab: false
 
     color: Material.background
     radius: 4
@@ -24,37 +42,10 @@ Rectangle {
     width: Math.max(200, Math.min(Window.width * 0.8, 400))
     height: 50
     
-//    Rectangle {
-//        id: colorSquare
-
-//        radius: parent.radius
-//        color: playerColor
-
-//        width: height + radius
-//        anchors {
-//            top: parent.top
-//            left: parent.left
-//            bottom: parent.bottom
-//        }
-
-//        // Fills in the square's right side to cover the rounded corners with nice sharp ones
-//        Rectangle {
-//            color: parent.color
-//            width: parent.radius
-//            anchors {
-//                top: parent.top
-//                right: parent.right
-//                bottom: parent.bottom
-//            }
-//        }
-//    }
-
     ComboBox {
         id: colorSquare
 
-        // When a color is chosen from the popup
-//        onActivated: { indicator.color = model[index] }
-
+        activeFocusOnTab: false
         displayText: ""
         width: height
         anchors {
@@ -63,19 +54,13 @@ Rectangle {
             bottom: parent.bottom
         }
 
-        activeFocusOnTab: false
-
-//        popup.transformOrigin: Popup.Right
-//        popup.x: x + width
-//        popup.y: y - width * currentIndex
-//        popup.onAboutToShow: currentIndex = find(playerColor)
-
         model:  [ Material.color(Material.Red),
                 Material.color(Material.Blue),
                 Material.color(Material.Green),
                 Material.color(Material.Amber),
                 Material.color(Material.Purple) ]
 
+        // The individual colored squares in the popup menu
         delegate: Rectangle {
             radius: 0
             anchors.margins: 0
@@ -87,7 +72,7 @@ Rectangle {
             MouseArea {
                 anchors.fill: parent
                 onClicked: {
-                    colorSquare.indicator.color = modelData
+                    playerColor = modelData
                     colorSquare.activated(index)
                     colorSquare.currentIndex = index
                     colorSquare.popup.close()
@@ -95,34 +80,7 @@ Rectangle {
             }
         }
 
-        /*
-        popup: Popup {
-            height: contentHeight
-            width: player.height
-            transformOrigin: Popup.Right
-
-            contentItem: ColumnLayout {
-                spacing: 0
-                height: 500
-                width: height
-
-                Repeater {
-                    delegate: Rectangle {
-                        radius: 0
-                        anchors.margins: 0
-                        width: player.height
-                        height: width
-                        color: Material.color(modelData)
-                    }
-
-                    model: colorSquare.model
-                }
-            }
-
-            background: Rectangle { color: "transparent" }
-        }
-        */
-
+        // The appearance of the colored square
         indicator: Rectangle {
 
             color: playerColor
@@ -141,6 +99,7 @@ Rectangle {
         }
     }
     
+    /*
     Text {
         id: displayName
 
@@ -151,13 +110,51 @@ Rectangle {
 
         anchors {
             left: colorSquare.right
+            leftMargin: 10
             verticalCenter: parent.verticalCenter
         }
         verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignLeft
     }
+    */
+
+    TextField {
+        id: nameField
+
+        signal clearField()
+
+        onEditingFinished: {
+            player.finished()
+        }
+
+        onClearField: {
+            placeholderText = qsTr("Player Name")
+            clear()
+        }
+
+        activeFocusOnTab: parent.activeFocusOnTab
+        color: Material.foreground
+        //: This is the placeholderText for player name input field.
+        placeholderText: player.playerName
+        validator: RegExpValidator { regExp: (/[A-Öa-ö0-9 ]+/) }
+        anchors {
+            top: parent.top
+            topMargin: 7
+            left: colorSquare.right
+            leftMargin: 10
+            right: separator.left
+            bottom: parent.bottom
+        }
+
+        background: Rectangle {
+            anchors.fill: parent
+            color: "transparent"
+        }
+    }
 
     // A nice little separator
     Rectangle {
+        id: separator
+
         color: "black"
         opacity: 0.1
         width: 1
@@ -169,9 +166,15 @@ Rectangle {
 
     }
     
+    // Rightmost button that has the functionality for starting or ending
+    // editing of the contents of the parent item.
     Button {
         id: cardButton
+
+        onClicked: buttonPressed()
         
+        activeFocusOnTab: false
+        enabled: nameField.acceptableInput
         flat: true
         width: 50
         height: implicitWidth
@@ -181,8 +184,8 @@ Rectangle {
         }
 
         contentItem: Icon {
-            source: iconSource
-            color: "black"
+            source: buttonIcon
+            color: buttonIconColor
             pixelSize: 24
         }
     }

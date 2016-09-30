@@ -11,6 +11,7 @@ import "qrc:/Components"
 Page {
     id: page
 
+
     //: The title of the page.
     title: qsTr("Players")
 
@@ -25,7 +26,7 @@ Page {
 
         signal hasPlayersChanged(bool hasPlayer)
 
-        //        Component.onCompleted: { removePlayersTable(); /* For dev purposes */ }
+        Component.onCompleted: { removePlayersTable(); /* For dev purposes */ }
 
         currentIndex: playerListModel.count - 1
 
@@ -40,9 +41,11 @@ Page {
         delegate: PlayerCard {
             id: player
 
+            Component.onCompleted: nameItem.text = playerName
+
             playerColor: model.color
             playerName: model.name
-            iconSource: "qrc:/images/icons/trash.svg"
+            buttonIcon: "qrc:/images/icons/trash.svg"
         }
 
         // Populated from an sqlite database
@@ -51,6 +54,7 @@ Page {
 
             Component.onCompleted: getPlayers()
 
+            // This is only used when first loading the page
             function getPlayers() {
                 var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
 
@@ -72,7 +76,7 @@ Page {
 
                                 // For dev
                                 if (count === 0) {
-                                    append({ "player": 1, "name": "No One", "color": "red" })
+                                    append({ "player": 1, "name": "No One", "color": "transparent" })
                                 }
                             }
                             );
@@ -88,13 +92,12 @@ Page {
             }
         }
 
-        // TODO: Make work
         function removePlayersTable(name, color) {
             var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
 
             db.transaction (
                         function(tx) {
-                            tx.executeSql('DROP TABLE IF EXISTS players');
+                            tx.executeSql('DROP TABLE players');
                         }
                         );
         }
@@ -115,13 +118,13 @@ Page {
 
             color: Material.background
             height: newPlayerCard.height + instruction.height + 20
+            radius: 6
             anchors {
                 left: parent.left
                 bottom: bottomBar.top
                 right: parent.right
             }
 
-            radius: 6
             layer { enabled: true; effect: ElevationEffect { elevation: 8 } }
 
             ColumnLayout {
@@ -144,99 +147,48 @@ Page {
                 PlayerCard {
                     id: newPlayerCard
 
+                    Component.onCompleted: { playerColor = newPlayerCard.newColor(playerList.count) }
+
+                    onButtonPressed: { finished() }
+                    onFinished: {
+//                        if (nameItem.acceptableInput) {
+                            addPlayer()
+//                        }
+                    }
+
+                    // TODO: Something else is stealing focus. This does nothing. Help
+//                    activeFocusOnTab: true
+//                    focus: true
+                    buttonIcon: "qrc:/images/icons/done.svg"
                     anchors {
                         left: parent.left
                         leftMargin: 10
-                        top: instruction.bottom
                         right: parent.right
                         rightMargin: 10
+                        top: instruction.bottom
                     }
 
-                    playerColor: newPlayerCard.newColor(playerList.count)
-
-//                    colorItem: ComboBox {
-//                        id: colorChooser
-
-//                        property color currentColor
-
-//                        width: height
-//                        anchors {
-//                            top: parent.top
-//                            left: parent.left
-//                            bottom: parent.bottom
-//                        }
-
-//                        activeFocusOnTab: false
-//                        displayText: ""
-//                        padding: 0
-
-//                        model:  [ Material.Red, Material.Blue, Material.Green, Material.Amber, Material.Purple ]
-
-//                        popup: Popup {
-//                            height: contentHeight
-//                            width: colorChooser.width
-
-//                            contentItem: ColumnLayout {
-//                                Repeater {
-//                                    delegate: Rectangle {
-//                                        radius: 3
-//                                        height: colorChooser.height
-//                                        color: Material.color(modelData)
-//                                        anchors { left: parent.left; right: parent.right }
-//                                    }
-
-//                                    model: colorChooser.model
-//                                }
-//                            }
-
-//                            //background: Rectangle { color: "transparent" }
-//                        }
-
-//                        contentItem: Rectangle {
-//                            Component.onCompleted: {
-//                                colorChooser.currentColor = getColor(playerList.count + 1)
-//                            }
-
-//                            radius: 4
-//                            color: colorChooser.currentColor
-////                            layer { enabled: true; effect: ElevationEffect { elevation: 1 } }
-
-//                            function getColor(index) {
-//                                // Cycle through an array of colors and assign it to players
-//                                var colors = [Material.color(Material.Red),
-//                                              Material.color(Material.Blue),
-//                                              Material.color(Material.Green),
-//                                              Material.color(Material.Yellow),
-//                                              Material.color(Material.Purple),
-//                                              Material.color(Material.Amber)];
-//                                index = index % colors.length
-
-//                                return colors[index];
-//                            }
-//                        }
-
-//                        background: Rectangle { color: "transparent" }
-
-//                        onActivated: {
-//                            currentColor = model[index]
-//                        }
-//                    }
-
+                    /*
                     nameItem: TextField {
                         id: nameField
 
-                        onEditingFinished: {
-                            addPlayer(playerListModel.count + 2, displayText, colorChooser.currentColor)
+                        signal clearField()
+
+                        onClearField: {
                             selectAll()
                             remove(selectionStart, selectionEnd)
                             deselect()
-                            colorChooser.currentColor = colorChooser.contentItem.getColor(playerList.count + 1)
+                        }
+
+                        onAccepted: {
+                            newPlayerCard.addPlayer()
                         }
 
                         anchors {
                             top: parent.top
-                            left: newPlayerCard.colorItem.right
-                            leftMargin: 10
+                            left: colorSquare.right
+                            leftMargin: 100
+                            verticalCenterOffset: 5
                             bottom: parent.bottom
                         }
 
@@ -245,50 +197,31 @@ Page {
                         placeholderText: qsTr("Player Name")
                         validator: RegExpValidator { regExp: (/[A-Öa-ö0-9 ]+/) }
 
-                        function addPlayer(index, name, color) {
+                    }
+                    */
 
-                            var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
+                    function addPlayer() {
+                        var index = playerListModel.count + 2;
+                        var name = newPlayerCard.playerName;
+                        var color = newPlayerCard.playerColor
 
-                            db.transaction (
-                                        function(tx) {
-                                            // Create db if it doesn't already exist
-                                            tx.executeSql('CREATE TABLE IF NOT EXISTS players(
+                        var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
+
+                        db.transaction (
+                                    function(tx) {
+                                        // Create db if it doesn't already exist
+                                        tx.executeSql('CREATE TABLE IF NOT EXISTS players(
                                                             ID          INTEGER PRIMARY KEY,
                                                             NAME        TEXT,
                                                             COLOR       BLOB)');
 
-                                            tx.executeSql('INSERT INTO players VALUES(?, ?, ?)', [index, name, color]);
-                                        }
-                                        );
-                            playerListModel.append({"player": index, "name": name, "color": color});
-                        }
-                    }
+                                        tx.executeSql('INSERT INTO players VALUES(?, ?, ?)', [index, name, color]);
+                                    }
+                                    );
+                        playerListModel.append({"player": index, "name": name, "color": color});
 
-                    Rectangle {
-                        anchors {
-                            verticalCenter: parent.verticalCenter
-                            right: parent.right
-                            rightMargin: 10
-                        }
-                        width: 36
-                        height: width
-                        color: Material.background
-
-                        radius: 3
-                        layer { enabled: true; effect: ElevationEffect { elevation: 1 } }
-
-                        Image {
-                            id: addPlayerButton
-
-                            visible: true
-                            anchors.centerIn: parent
-                            fillMode: Image.Pad
-                            mipmap: true
-                            sourceSize.height: 32
-                            source: "qrc:/images/icons/done.svg"
-                            opacity: 0.54
-                            smooth: true
-                        }
+                        done()
+                        playerColor = newPlayerCard.newColor(playerList.count)
                     }
                 }
             }
@@ -309,6 +242,7 @@ Page {
                 onPressed: { stackView.push("qrc:/pages/Overview.qml") }
 
                 enabled: playerList.count > 0 ? true : false
+                //: This is the label on the button to finish adding players and go to next page.
                 text: qsTr("Done")
 
                 anchors.right: parent.right

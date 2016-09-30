@@ -3,6 +3,8 @@ import QtQuick.Controls 2.0
 import QtQuick.Controls.Material 2.0
 import QtGraphicalEffects 1.0
 
+// This is a monochrome icon with a special property to set its color
+
 Item {
     property url source
     property color color: "black"
