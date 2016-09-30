@@ -12,10 +12,10 @@ ApplicationWindow {
 	//TODO: Add a "Brand" theme which has the brand colors of an organization.
 	//For now, "Light" is essentially the brand theme.
 	property string theme: "Light"
-	property color primaryColor: theme === "Light" ? "#C8D300" : "#31363b"
+    property color primaryColor: theme === "Light" ? "#816a97" : "#31363b"
 	property color backgroundColor: theme === "Light" ? "#eff0f1" : "#232629"
 	property color foregroundColor: theme === "Light" ? "#31363b" : "#eff0f1"
-	property color accentColor: theme === "Light" ? "#e03f90" : "#31363b"
+    property color accentColor: theme === "Light" ? "#00a489" : "#eff0f1"
 
 	width: 360
 	minimumWidth: 320
@@ -250,7 +250,7 @@ ApplicationWindow {
 				}
 
 				model: ListModel {
-					ListElement { title: "New Round"; source: "qrc:/pages/Players.qml" }
+//					ListElement { title: "New Round"; source: "qrc:/pages/Players.qml" }
 				}
 
 				ScrollIndicator.vertical: ScrollIndicator { }

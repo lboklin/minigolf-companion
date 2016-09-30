@@ -26,7 +26,7 @@ Page {
 
         signal hasPlayersChanged(bool hasPlayer)
 
-        Component.onCompleted: { removePlayersTable(); /* For dev purposes */ }
+//        Component.onCompleted: { deleteAllPlayers(); /* For dev purposes */ }
 
         currentIndex: playerListModel.count - 1
 
@@ -41,11 +41,19 @@ Page {
         delegate: PlayerCard {
             id: player
 
+            // TODO: Modify the player's database entry to reflect the changes
+            // made on existing player card
+
             Component.onCompleted: nameItem.text = playerName
 
             playerColor: model.color
             playerName: model.name
+            playerInitials: model.initials
             buttonIcon: "qrc:/images/icons/trash.svg"
+
+            onButtonPressed: {
+                playerList.deletePlayer(model.id, index)
+            }
         }
 
         // Populated from an sqlite database
@@ -58,28 +66,19 @@ Page {
             function getPlayers() {
                 var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
 
-                db.transaction (
-                            function(tx) {
-                                // Create db if it doesn't already exist
-                                tx.executeSql('CREATE TABLE IF NOT EXISTS players(
-                                ID          INTEGER PRIMARY KEY,
-                                NAME        TEXT,
-                                COLOR       TEXT)');
-                                var rs = tx.executeSql('SELECT NAME, COLOR FROM players');
+                db.transaction (function(tx) {
+                    // Create db if it doesn't already exist
+                    tx.executeSql('CREATE TABLE IF NOT EXISTS players(ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT, INITIALS TEXT, COLOR TEXT)');
+                    var rs = tx.executeSql('SELECT * FROM players');
 
-                                for (var i = 0; i < rs.rows.length; i++) {
-                                    append( {
-                                               player: rs.rows.item(i).ID,
-                                               name: rs.rows.item(i).NAME,
-                                               color: rs.rows.item(i).COLOR } )
-                                }
-
-                                // For dev
-                                if (count === 0) {
-                                    append({ "player": 1, "name": "No One", "color": "transparent" })
-                                }
-                            }
-                            );
+                    for (var i = 0; i < rs.rows.length; i++) {
+                        append({
+                                   id:      rs.rows.item(i).ID,
+                                   name:        rs.rows.item(i).NAME,
+                                   initials:    rs.rows.item(i).INITIALS,
+                                   color:       rs.rows.item(i).COLOR })
+                    }
+                });
             }
         }
 
@@ -92,16 +91,32 @@ Page {
             }
         }
 
-        function removePlayersTable(name, color) {
+        function deleteAllPlayers(name, color) {
             var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
-
-            db.transaction (
-                        function(tx) {
-                            tx.executeSql('DROP TABLE players');
-                        }
-                        );
+            db.transaction ( function(tx) { tx.executeSql('DROP TABLE players') });
         }
 
+        // id = player id
+        // index = current index in the listview model
+        function deletePlayer(id, index) {
+
+            console.log("(#%1) %2 is dead.".arg(id).arg(playerList.model.get(index).initials));
+
+            // Remove from listview first for them responsivenessess (Does it work?)
+            playerList.model.remove(index);
+
+            var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
+
+            db.transaction(
+                        function (tx) {
+                            tx.executeSql('DELETE FROM players WHERE ID=?', id)
+
+                            var rs = tx.executeSql('SELECT * FROM players');
+//                            for (var i = 0; i < rs.rows.length; i++) {
+//                                console.log("(#%1) %2 is still in the game.".arg(rs.rows.item(i).ID).arg(rs.rows.item(i).INITIALS))
+//                            }
+                        });
+        }
     }
 
 
@@ -121,7 +136,8 @@ Page {
             radius: 6
             anchors {
                 left: parent.left
-                bottom: bottomBar.top
+                bottom: parent.bottom
+                bottomMargin: -7
                 right: parent.right
             }
 
@@ -140,25 +156,20 @@ Page {
 
                     padding: 10
                     text: "Add Player:"
-                    font.pixelSize: 14
+                    color: window.foregroundColor
+                    font.pixelSize: 16
 
                 }
 
                 PlayerCard {
                     id: newPlayerCard
 
-                    Component.onCompleted: { playerColor = newPlayerCard.newColor(playerList.count) }
+                    Component.onCompleted: playerColor = newPlayerCard.newColor(playerList.count)
 
-                    onButtonPressed: { finished() }
-                    onFinished: {
-//                        if (nameItem.acceptableInput) {
-                            addPlayer()
-//                        }
-                    }
+                    onButtonPressed: finished()
+                    onFinished: if (goodName) { addPlayer() }
 
-                    // TODO: Something else is stealing focus. This does nothing. Help
-//                    activeFocusOnTab: true
-//                    focus: true
+                    // TODO: Something else is stealing focus. Help
                     buttonIcon: "qrc:/images/icons/done.svg"
                     anchors {
                         left: parent.left
@@ -168,84 +179,53 @@ Page {
                         top: instruction.bottom
                     }
 
-                    /*
-                    nameItem: TextField {
-                        id: nameField
-
-                        signal clearField()
-
-                        onClearField: {
-                            selectAll()
-                            remove(selectionStart, selectionEnd)
-                            deselect()
-                        }
-
-                        onAccepted: {
-                            newPlayerCard.addPlayer()
-                        }
-
-                        anchors {
-                            top: parent.top
-                            left: colorSquare.right
-                            leftMargin: 100
-                            verticalCenterOffset: 5
-                            bottom: parent.bottom
-                        }
-
-                        color: Material.foreground
-                        //: This is the placeholderText for player name input field.
-                        placeholderText: qsTr("Player Name")
-                        validator: RegExpValidator { regExp: (/[A-Öa-ö0-9 ]+/) }
-
-                    }
-                    */
-
                     function addPlayer() {
-                        var index = playerListModel.count + 2;
-                        var name = newPlayerCard.playerName;
-                        var color = newPlayerCard.playerColor
+                        // count + 1 because we are adding one to the existing list in both db and playerList
+                        var id = 0;
+                        var name = newPlayerCard.playerName.trim();
+                        var initials = "";
+
+                        // Produce initials out of displayname
+                        var initialsList = name.match(/((^|[^\wåäö])[\wåäö]|\d{1,3})/gi);
+                        // Concat to a single string and trim to get rid of spaces
+                        for (var i = 0; i < initialsList.length; i++) { initials = initials.concat(initialsList[i].trim()) }
+                        // Limit max length of initials
+                        initials = initials.slice(0,4);
+
+                        var color = newPlayerCard.playerColor;
 
                         var db = LocalStorage.openDatabaseSync("mgc", "1.0", "Holds players and their details");
 
-                        db.transaction (
-                                    function(tx) {
-                                        // Create db if it doesn't already exist
-                                        tx.executeSql('CREATE TABLE IF NOT EXISTS players(
-                                                            ID          INTEGER PRIMARY KEY,
-                                                            NAME        TEXT,
-                                                            COLOR       BLOB)');
+                        // TODO: Remove all the console logging before sometime in the future - it's for debugging purposes
+                        db.transaction (function(tx) {
+                            // Create db if it doesn't already exist
+                            tx.executeSql('CREATE TABLE IF NOT EXISTS players(ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT, INITIALS TEXT, COLOR TEXT)');
 
-                                        tx.executeSql('INSERT INTO players VALUES(?, ?, ?)', [index, name, color]);
-                                    }
-                                    );
-                        playerListModel.append({"player": index, "name": name, "color": color});
+                            // List all players
+                            var rs = tx.executeSql('SELECT * FROM players');
+                            console.log("-------------");
+                            for (var i = 0; i < rs.rows.length; i++) {
+                                console.log("(#%2) %1 reporting in.".arg(rs.rows.item(i).INITIALS).arg(rs.rows.item(i).ID));
+                            }
+
+                            // Insert the new player
+                            tx.executeSql('INSERT INTO players (NAME, INITIALS, COLOR) VALUES(?, ?, ?)', [name, initials, color]);
+
+                            // Get the recently assigned ID -- Surely there must be a better way?
+                            var ids = tx.executeSql('SELECT ID FROM players WHERE NAME=? AND COLOR=?', [name, color]);
+                            id = ids.rows.item(0).ID;
+                            // Print something about the new insertion
+                            console.log("(#%2) %1 joined the game.".arg(initials).arg(id))
+//                            console.log("The ID assigned was: %1".arg(id));
+                        });
+
+                        // Add the player to the listView model
+                        playerList.model.append({"id": id, "name": name, "initials": initials, "color": color});
 
                         done()
                         playerColor = newPlayerCard.newColor(playerList.count)
                     }
                 }
-            }
-        }
-
-        ToolBar {
-            id: bottomBar
-
-            anchors {
-                left: parent.left
-                bottom: parent.bottom
-                right: parent.right
-            }
-
-            FlatButton {
-                id: doneButton
-
-                onPressed: { stackView.push("qrc:/pages/Overview.qml") }
-
-                enabled: playerList.count > 0 ? true : false
-                //: This is the label on the button to finish adding players and go to next page.
-                text: qsTr("Done")
-
-                anchors.right: parent.right
             }
         }
     }

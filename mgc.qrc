@@ -46,5 +46,6 @@
         <file>Components/FlatButton.qml</file>
         <file>Components/Icon.qml</file>
         <file>Components/PlayerCard.qml</file>
+        <file>pages/SwipeView.qml</file>
     </qresource>
 </RCC>

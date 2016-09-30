@@ -11,29 +11,25 @@ Rectangle {
     id: player
 
     property string playerColor: "transparent"
-    property string playerName: qsTr("Player Name")
-
-    property alias buttonItem: cardButton.data
-    property url buttonIcon
-    property color buttonIconColor
-
     property alias colorItem: colorSquare.data
 
+    property string playerName: qsTr("Player Name")
+    property string playerInitials: ""
     property alias nameItem: nameField.data
+    property bool goodName: nameField.acceptableInput
 
-    // Rightmost button is pressed
-    signal buttonPressed()
-    // Player is finished editing
-    signal finished()
-    // All actions have been taken - free to clear contents
-    signal done()
+    property url buttonIcon
+    property color buttonIconColor
+    property alias buttonItem: cardButton.data
+
+
+    signal buttonPressed()      // Rightmost button is pressed
+    signal finished()           // Player is finished editing
+    signal done()               // All actions have been taken - free to clear contents
 
     onPlayerNameChanged: nameField.text = playerName
-
     onFinished: playerName = nameField.displayText
     onDone: nameField.clearField()
-
-    activeFocusOnTab: false
 
     color: Material.background
     radius: 4
@@ -46,8 +42,8 @@ Rectangle {
         id: colorSquare
 
         activeFocusOnTab: false
-        displayText: ""
-        width: height
+        displayText: playerInitials
+        width: height * 1.2
         anchors {
             top: parent.top
             left: parent.left
@@ -64,10 +60,9 @@ Rectangle {
         delegate: Rectangle {
             radius: 0
             anchors.margins: 0
-            width: player.height
-            height: width
+            width: colorSquare.width
+            height: colorSquare.height
             color: modelData
-            clip: true
 
             MouseArea {
                 anchors.fill: parent
@@ -84,10 +79,18 @@ Rectangle {
         indicator: Rectangle {
 
             color: playerColor
-
             radius: 4
             width: height + radius
             anchors.fill: parent
+
+            // Nice initials display
+            Text {
+                text: playerInitials
+                font.pixelSize: 18
+                color: window.backgroundColor
+                opacity: parent.enabled ? 1.0 : 0.54
+                anchors.horizontalCenter: parent.horizontalCenter; anchors.verticalCenter: parent.verticalCenter
+            }
 
             // Fills in the square's right side to cover the rounded corners with nice sharp ones
             Rectangle {
@@ -98,31 +101,15 @@ Rectangle {
             }
         }
     }
-    
-    /*
-    Text {
-        id: displayName
-
-        text: playerName
-        font.pixelSize: 18
-        color: Material.foreground
-        padding: 8
-
-        anchors {
-            left: colorSquare.right
-            leftMargin: 10
-            verticalCenter: parent.verticalCenter
-        }
-        verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignLeft
-    }
-    */
 
     TextField {
         id: nameField
 
         signal clearField()
 
-        onEditingFinished: {
+        onActiveFocusChanged: activeFocus ? selectAll() : deselect()
+
+        onAccepted: {
             player.finished()
         }
 
@@ -131,11 +118,12 @@ Rectangle {
             clear()
         }
 
+        selectByMouse: true
         activeFocusOnTab: parent.activeFocusOnTab
         color: Material.foreground
         //: This is the placeholderText for player name input field.
         placeholderText: player.playerName
-        validator: RegExpValidator { regExp: (/[A-Öa-ö0-9 ]+/) }
+        validator: RegExpValidator { regExp: (/[A-Öa-ö0-9\- ]+/) }
         anchors {
             top: parent.top
             topMargin: 7
